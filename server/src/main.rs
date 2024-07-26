@@ -1,7 +1,6 @@
 use rand::Rng;
 use std::io::Write;
 use std::net::TcpListener;
-use std::time::Duration;
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:6969").unwrap();
@@ -10,10 +9,10 @@ fn main() {
         println!("Client {addr:?} connected");
         let mut byte = 0u8;
         let mut rng = rand::thread_rng();
-        for i in 0..100_000 {
-            let len = rng.gen_range(5..25);
-            //let len = 4;
-            println!("  msg[{i}].len = {len}");
+        for i in 0..100 {
+            //let len = rng.gen_range(5..25);
+            let len = (i % 6) + 4;
+            //println!("  msg[{i}].len = {len}");
 
             let payload: Vec<u8> = (0..len)
                 .map(|_| {
@@ -24,13 +23,21 @@ fn main() {
 
             let mut p = build_packet(&payload);
 
-            if rng.gen::<f64>() < 0.0001 {
-                p.push(0);
-                p.push(0);
-                p.push(0);
-                p.push(0);
+            if rng.gen::<f64>() < 0.01 {
+                //println!("Appending inner bytes");
+                let idx = rng.gen_range(0..p.len());
+                //p.insert(idx, rng.gen());
             }
-            println!("Sent: {p:?}");
+
+            if rng.gen::<f64>() < 0.1 {
+                println!("Adding training bytes");
+                let len = rng.gen_range(0..10);
+                for _ in 0..len {
+                    p.push(rng.gen());
+                }
+            }
+            assert!(p.len() <= 32);
+            //println!("Sent: {p:?}");
             let _ = client.write_all(&p);
             let _ = client.flush();
             //std::thread::sleep(Duration::from_millis(50));

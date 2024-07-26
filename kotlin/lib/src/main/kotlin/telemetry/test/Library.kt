@@ -12,11 +12,11 @@ fun calculateCrc(buf: ByteArray, offset: Int, len: Int): UShort {
     var crc = 0x6969
     var i = 0
     while(i < len) {
-        print("${buf[offset + i].toUByte()} ")
+        //print("${buf[offset + i].toUByte()} ")
         crc += (buf[offset + i]).toUByte().toInt()
         i++
     }
-    println(" CRC complete: ${crc.toUShort()}")
+    //println(" CRC complete: ${crc.toUShort()}")
     return crc.toUShort()
 }
 
@@ -29,17 +29,18 @@ class ProtocolReader(private val reader: BufReader) {
             && this.reader.readByte() == MAGIC[1]
             && this.reader.readByte() == MAGIC[2])
         {
-            println(">Read valid magic")
+            //println(">Read valid magic")
             val payloadLen = this.reader.readU16LE().toInt()
-            println(">Got len $payloadLen")
+            //println(">Got len $payloadLen")
             val payload = this.reader.readBytes(payloadLen)
             val crc = this.reader.readU16LE()
             val mark = this.reader.getMark()
 
             val packetLen = this.reader.filled - mark
-            println("filled: ${this.reader.filled}, mark: $mark")
-            println("packetLen: $packetLen, payloadLen: $payloadLen")
+            //println("filled: ${this.reader.filled}, mark: $mark")
+            //println("packetLen: $packetLen, payloadLen: $payloadLen")
             assert(packetLen == payloadLen + 3 + 2 + 2)
+            // dont include crc when calculating itself
             val expectedCrc = calculateCrc(reader.buf, mark, packetLen - 2)
             if (crc != expectedCrc) {
                 println(">Throwing out invalid crc. Expected $expectedCrc, got $crc")
@@ -55,7 +56,7 @@ class ProtocolReader(private val reader: BufReader) {
 
 // offset is the index of the next byte to be read, len is the bytes remaining in the unread portion
 class BufReader(private val inner: InputStream) {
-    val buf: ByteArray = ByteArray(24) { 0 }
+    val buf: ByteArray = ByteArray(32) { 0 }
     var filled: Int = 0
     var initialized: Int = 0
     // Mark is used to record the first index of interest when shifting bytes backward
@@ -99,8 +100,8 @@ class BufReader(private val inner: InputStream) {
     // Calls read until at least `count` bytes are buffered
     // Throws if EOF is reached
     fun fillAtLeast(count: Int) {
-        println();
-        println("fillAtLeast($count)");
+        //println();
+        //println("fillAtLeast($count)");
         while (true) {
             if (this.bufferedCount() >= count) {
                 return
@@ -116,8 +117,8 @@ class BufReader(private val inner: InputStream) {
                     println("Not enough space in buffer ${this.unfilledCount()}/${buf.size} for fill of $count. Shifting $buffered bytes back to start of buffer")
                     // need to shift bytes back to read again
                     System.arraycopy(this.buf, this.filled, this.buf, 0, buffered)
-                    this.filled -= this.filled
                     this.initialized -= this.filled
+                    this.filled -= this.filled
                 } else {
                     val buffered = this.initialized - this.mark
                     println("Not enough space in buffer ${this.unfilledCount()}/${buf.size} for fill of $count. Shifting $buffered bytes back to start of buffer from mark ${this.mark}")
@@ -125,9 +126,9 @@ class BufReader(private val inner: InputStream) {
                     // need to shift bytes back to read again
                     System.arraycopy(this.buf, this.mark, this.buf, 0, buffered)
                     this.filled -= this.mark
-                    this.mark -= this.mark
                     this.initialized -= this.mark
-                    println("First bytes after copy: ${Arrays.toString(Arrays.copyOfRange(this.buf, this.mark, this.initialized))}")
+                    this.mark -= this.mark
+                    //println("First bytes after copy: ${Arrays.toString(Arrays.copyOfRange(this.buf, this.mark, this.initialized))}")
                 }
             }
             val read = this.fillBuf()
@@ -142,8 +143,8 @@ class BufReader(private val inner: InputStream) {
 
     fun fillBuf(): Int {
         println()
-        val read = this.inner.read(buf, this.filled, this.unfilledCount())
-        println("First bytes after read: ${Arrays.toString(Arrays.copyOfRange(this.buf, this.filled, this.filled + this.bufferedCount()))}")
+        val read = this.inner.read(buf, this.initialized, this.unfilledCount())
+        //println("First bytes after read: ${Arrays.toString(Arrays.copyOfRange(this.buf, this.filled, this.filled + this.bufferedCount()))}")
 
         println("Read $read bytes")
         this.initialized += read
