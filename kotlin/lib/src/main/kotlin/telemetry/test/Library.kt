@@ -31,6 +31,10 @@ class ProtocolReader(private val reader: BufReader) {
         {
             //println(">Read valid magic")
             val payloadLen = this.reader.readU16LE().toInt()
+            if (payloadLen + 3 + 2 + 2 > reader.buf.size) {
+                println(">Packet length corrupted. Value too large. Expected <= 32, got $payloadLen")
+                return null
+            }
             //println(">Got len $payloadLen")
             val payload = this.reader.readBytes(payloadLen)
             val crc = this.reader.readU16LE()
@@ -56,7 +60,7 @@ class ProtocolReader(private val reader: BufReader) {
 
 // offset is the index of the next byte to be read, len is the bytes remaining in the unread portion
 class BufReader(private val inner: InputStream) {
-    val buf: ByteArray = ByteArray(32) { 0 }
+    val buf: ByteArray = ByteArray(256) { 0 }
     var filled: Int = 0
     var initialized: Int = 0
     // Mark is used to record the first index of interest when shifting bytes backward

@@ -9,7 +9,9 @@ fn main() {
         println!("Client {addr:?} connected");
         let mut byte = 0u8;
         let mut rng = rand::thread_rng();
-        for i in 0..100 {
+        let corrupted_count = 200;
+        let total = 1000 + corrupted_count;
+        for i in 0..total {
             //let len = rng.gen_range(5..25);
             let len = (i % 6) + 4;
             //println!("  msg[{i}].len = {len}");
@@ -23,10 +25,10 @@ fn main() {
 
             let mut p = build_packet(&payload);
 
-            if rng.gen::<f64>() < 0.01 {
-                //println!("Appending inner bytes");
+            if i % (total / corrupted_count) == 0 {
+                println!("Appending inner bytes");
                 let idx = rng.gen_range(0..p.len());
-                //p.insert(idx, rng.gen());
+                p.insert(idx, rng.gen());
             }
 
             if rng.gen::<f64>() < 0.1 {
